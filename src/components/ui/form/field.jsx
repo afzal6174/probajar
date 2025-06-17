@@ -2,36 +2,25 @@
 
 import { cn } from "@/lib/utils/cn";
 import * as React from "react";
-import { useForm } from "./form";
+import { useFormContext } from "./form";
 import { Label } from "./label";
 
-const FieldContext = React.createContext({});
-
-const fieldReducer = (state, action) => {
-  switch (action.type) {
-    case "SET_ERROR":
-      return { ...state, error: action.payload };
-    case "CLEAR_ERROR":
-      return { ...state, error: null };
-    default:
-      throw new Error(`No action matched with ${action.type}`);
-  }
-};
+const FieldContext = React.createContext(null);
 
 const Field = ({ name, className, ...props }) => {
-  const [state, dispatch] = React.useReducer(fieldReducer, { error: null });
   const id = React.useId();
-  const { errors } = useForm();
+  const { clientState, serverState } = useFormContext();
+  const clientError = clientState?.errors?.[name]?.[0]?.message;
+  const serverError = serverState?.errors?.[name]?.[0]?.message;
+  const error = clientError ?? serverError;
   return (
     <FieldContext.Provider
       value={{
         name,
-        error: state?.error || errors?.[name]?.[0],
+        error,
         fieldId: `field-${id}`,
         fieldDescriptionId: `field-${id}-description`,
         fieldMessageId: `field-${id}-message`,
-        dispatch,
-        ...state,
       }}
     >
       <div
@@ -43,18 +32,18 @@ const Field = ({ name, className, ...props }) => {
   );
 };
 
-const useField = () => {
+const useFieldContext = () => {
   const fieldContext = React.useContext(FieldContext);
 
   if (!fieldContext) {
-    throw new Error("useField should be used within <Field>");
+    throw new Error("useFieldContext should be used within <Field>");
   }
 
   return fieldContext;
 };
 
 function FieldLabel({ className, ...props }) {
-  const { error, fieldId } = useField();
+  const { error, fieldId } = useFieldContext();
   return (
     <Label
       data-slot="form-label"
@@ -67,7 +56,7 @@ function FieldLabel({ className, ...props }) {
 }
 
 function FieldDescription({ className, ...props }) {
-  const { fieldDescriptionId } = useField();
+  const { fieldDescriptionId } = useFieldContext();
   return (
     <p
       data-slot="form-description"
@@ -79,8 +68,8 @@ function FieldDescription({ className, ...props }) {
 }
 
 function FieldMessage({ className, ...props }) {
-  const { error, fieldMessageId } = useField();
-  const body = error ? String(error) : props.children;
+  const { error, fieldMessageId } = useFieldContext();
+  const body = props.children ?? (error && String(error));
 
   if (!body) {
     return null;
@@ -101,4 +90,4 @@ function FieldMessage({ className, ...props }) {
   );
 }
 
-export { Field, FieldDescription, FieldLabel, FieldMessage, useField };
+export { Field, FieldDescription, FieldLabel, FieldMessage, useFieldContext };

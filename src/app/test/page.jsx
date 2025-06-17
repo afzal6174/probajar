@@ -15,22 +15,33 @@ import {
   FieldMessage,
   Form,
   FormDescription,
+  FormMessage,
   FormTitle,
   Input,
-  useForm,
 } from "@/components/ui/form";
+import errorReducer from "@/components/ui/form/reducer";
 import { loginSchema } from "@/schema/loginSchema";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useActionState, useReducer, useState } from "react";
 
 export default function LoginForm() {
-  const { isPending } = useForm();
-  console.log(isPending);
+  const initialState = { message: null, errors: {} };
+  const [serverState, formAction, isPending] = useActionState(
+    login,
+    initialState
+  );
+  const [clientState, dispatch] = useReducer(errorReducer, { errors: {} });
+  const state = {
+    serverState,
+    clientState,
+    isPending,
+  };
+
   const [visible, setVisible] = useState(false);
   return (
     <Card className="w-full max-w-sm">
-      <Form action={login}>
+      <Form action={formAction} state={state} dispatch={dispatch}>
         <CardHeader>
           <FormTitle>Login to your account</FormTitle>
           <FormDescription>
@@ -70,8 +81,10 @@ export default function LoginForm() {
                 />
                 <Button
                   type="button"
+                  size="icon"
+                  variant="ghost"
                   onClick={() => setVisible((v) => !v)}
-                  className="absolute right-2 top-0 bg-muted text-muted-foreground"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-auto w-auto"
                   tabIndex={-1}
                 >
                   {visible ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -88,6 +101,7 @@ export default function LoginForm() {
           <Button variant="outline" className="w-full">
             Login with Google
           </Button>
+          <FormMessage />
         </CardFooter>
       </Form>
     </Card>

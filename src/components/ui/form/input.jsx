@@ -3,13 +3,13 @@
 import { cn } from "@/lib/utils/cn";
 import { getDraft, saveDraft } from "@/lib/utils/draftStorage";
 import * as React from "react";
-import { useField } from "./field";
-import { useForm } from "./form";
+import { useFormContext } from ".";
+import { useFieldContext } from "./field";
 
 function Input({ className, type, defaultValue, validation, ...props }) {
-  const { name, error, dispatch, fieldId, fieldDescriptionId, fieldMessageId } =
-    useField();
-  const { formId } = useForm();
+  const { name, error, fieldId, fieldDescriptionId, fieldMessageId } =
+    useFieldContext();
+  const { formId, dispatch } = useFormContext();
 
   const DRAFT_KEY = `draft-${formId}-${name}-${fieldId}`;
   const [value, setValue] = React.useState("");
@@ -23,12 +23,14 @@ function Input({ className, type, defaultValue, validation, ...props }) {
 
   const validateField = (fieldName, fieldValue) => {
     const result = validation.safeParse({ [fieldName]: fieldValue });
+
     if (result.success) {
-      dispatch({ type: "CLEAR_ERROR" });
+      dispatch({ type: "CLEAR_ERROR", payload: name });
     } else {
       dispatch({
         type: "SET_ERROR",
-        payload: result.error.errors[0]?.message,
+        // payload: result.error.errors[0]?.message,
+        payload: { [fieldName]: result.error.errors },
       });
     }
   };
